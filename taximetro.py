@@ -1,9 +1,11 @@
 TARIFA_PARADO = 0.02
 TARIFA_MOVIMIENTO = 0.05
 
-print("Bienvenido al Taxímetro")
+print("=== TAXÍMETRO DIGITAL ===")
+print("Comandos disponibles:")
 print("1 - Taxi parado")
 print("2 - Taxi en movimiento")
+print("Introduce los segundos para calcular el precio.")
 
 estado = input("Selecciona el estado: ")
 
