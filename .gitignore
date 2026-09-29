@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 taximetro.log
 historial.txt
+auth.json
