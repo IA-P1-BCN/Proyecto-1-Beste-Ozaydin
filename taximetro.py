@@ -5,9 +5,14 @@ import hashlib
 import secrets
 import hmac
 import os
+
 from getpass import getpass
 from datetime import datetime
 
+
+# -----------------------------
+# LOGGING
+# -----------------------------
 
 logging.basicConfig(
     filename="taximetro.log",
@@ -16,6 +21,10 @@ logging.basicConfig(
 )
 
 
+# -----------------------------
+# TARIFAS
+# -----------------------------
+
 with open("tarifas.json", "r") as archivo:
     tarifas = json.load(archivo)
 
@@ -23,9 +32,17 @@ TARIFA_PARADO = tarifas["parado"]
 TARIFA_MOVIMIENTO = tarifas["movimiento"]
 
 
+# -----------------------------
+# CÁLCULO DE PRECIO
+# -----------------------------
+
 def calcular_precio(tiempo, tarifa):
     return tiempo * tarifa
 
+
+# -----------------------------
+# CONTRASEÑA
+# -----------------------------
 
 def crear_hash_password(password, salt):
     return hashlib.pbkdf2_hmac(
@@ -36,18 +53,7 @@ def crear_hash_password(password, salt):
     )
 
 
-def crear_password():
-
-    print("Primera ejecución.")
-    print("Crea una contraseña para acceder al taxímetro.")
-
-    password = getpass("Nueva contraseña: ")
-    password_repetida = getpass("Repite la contraseña: ")
-
-    if password != password_repetida:
-        print("Las contraseñas no coinciden.")
-        return False
-
+def guardar_password(password):
     salt = secrets.token_bytes(16)
 
     password_hash = crear_hash_password(
@@ -63,12 +69,10 @@ def crear_password():
     with open("auth.json", "w") as archivo:
         json.dump(datos, archivo)
 
-    print("Contraseña creada correctamente.")
 
-    return True
-
-
-def verificar_password():
+def comprobar_password(password):
+    if not os.path.exists("auth.json"):
+        return False
 
     with open("auth.json", "r") as archivo:
         datos = json.load(archivo)
@@ -81,8 +85,6 @@ def verificar_password():
         datos["password_hash"]
     )
 
-    password = getpass("Introduce la contraseña: ")
-
     password_hash_introducido = crear_hash_password(
         password,
         salt
@@ -94,6 +96,42 @@ def verificar_password():
     )
 
 
+def crear_password():
+    print("Primera ejecución.")
+    print("Crea una contraseña para acceder al taxímetro.")
+
+    password = getpass("Nueva contraseña: ")
+    password_repetida = getpass(
+        "Repite la contraseña: "
+    )
+
+    if password != password_repetida:
+        print("Las contraseñas no coinciden.")
+        return False
+
+    if password == "":
+        print("La contraseña no puede estar vacía.")
+        return False
+
+    guardar_password(password)
+
+    print("Contraseña creada correctamente.")
+
+    return True
+
+
+def verificar_password():
+    password = getpass(
+        "Introduce la contraseña: "
+    )
+
+    return comprobar_password(password)
+
+
+# -----------------------------
+# CLASE TAXÍMETRO
+# -----------------------------
+
 class Taximetro:
 
     def __init__(
@@ -101,237 +139,207 @@ class Taximetro:
         tarifa_parado,
         tarifa_movimiento
     ):
-
         self.tarifa_parado = tarifa_parado
         self.tarifa_movimiento = tarifa_movimiento
 
         self.carrera_activa = False
         self.estado = None
+
         self.inicio_estado = None
         self.inicio_carrera = None
+
         self.precio_total = 0.0
 
 
     def iniciar_carrera(self):
 
         if self.carrera_activa:
-
             print("Ya hay una carrera activa.")
+            return
 
-            logging.warning(
-                "Intento de iniciar una carrera ya activa"
-            )
+        self.carrera_activa = True
+        self.estado = "parado"
 
-        else:
+        self.inicio_estado = time.time()
+        self.inicio_carrera = time.time()
 
-            self.carrera_activa = True
-            self.estado = "parado"
-            self.inicio_estado = time.time()
-            self.inicio_carrera = time.time()
-            self.precio_total = 0.0
+        self.precio_total = 0.0
 
-            print("Carrera iniciada.")
-            print("Estado actual: parado.")
+        print("Carrera iniciada.")
+        print("Taxi parado.")
 
-            logging.info("Carrera iniciada")
-            logging.info("Estado del taxi: parado")
+        logging.info("Carrera iniciada")
 
 
     def mover(self):
 
-        if self.carrera_activa:
-
-            tiempo_actual = time.time()
-
-            tiempo_parado = (
-                tiempo_actual - self.inicio_estado
-            )
-
-            if self.estado == "parado":
-
-                precio_parado = calcular_precio(
-                    tiempo_parado,
-                    self.tarifa_parado
-                )
-
-                self.precio_total = (
-                    self.precio_total + precio_parado
-                )
-
-                print(
-                    f"Tiempo parado: "
-                    f"{tiempo_parado:.2f} segundos"
-                )
-
-                print(
-                    f"Precio acumulado: "
-                    f"{self.precio_total:.2f} €"
-                )
-
-            self.estado = "movimiento"
-            self.inicio_estado = time.time()
-
-            print("Taxi en movimiento.")
-
-            logging.info(
-                "Estado del taxi: movimiento"
-            )
-
-        else:
-
+        if not self.carrera_activa:
             print(
                 "Primero debes iniciar una carrera."
             )
+            return
 
-            logging.warning(
-                "Intento de mover el taxi "
-                "sin carrera activa"
+        tiempo_actual = time.time()
+
+        if self.estado == "parado":
+
+            tiempo_parado = (
+                tiempo_actual
+                - self.inicio_estado
             )
+
+            precio_parado = calcular_precio(
+                tiempo_parado,
+                self.tarifa_parado
+            )
+
+            self.precio_total += precio_parado
+
+            print(
+                f"Tiempo parado: "
+                f"{tiempo_parado:.2f} segundos"
+            )
+
+            print(
+                f"Precio acumulado: "
+                f"{self.precio_total:.2f} €"
+            )
+
+        self.estado = "movimiento"
+        self.inicio_estado = tiempo_actual
+
+        print("Taxi en movimiento.")
+
+        logging.info(
+            "Estado cambiado a movimiento"
+        )
 
 
     def parar(self):
 
-        if self.carrera_activa:
-
-            tiempo_actual = time.time()
-
-            tiempo_movimiento = (
-                tiempo_actual - self.inicio_estado
-            )
-
-            if self.estado == "movimiento":
-
-                precio_movimiento = calcular_precio(
-                    tiempo_movimiento,
-                    self.tarifa_movimiento
-                )
-
-                self.precio_total = (
-                    self.precio_total
-                    + precio_movimiento
-                )
-
-                print(
-                    f"Tiempo en movimiento: "
-                    f"{tiempo_movimiento:.2f} segundos"
-                )
-
-                print(
-                    f"Precio acumulado: "
-                    f"{self.precio_total:.2f} €"
-                )
-
-            self.estado = "parado"
-            self.inicio_estado = time.time()
-
-            print("Taxi parado.")
-
-            logging.info(
-                "Estado del taxi: parado"
-            )
-
-        else:
-
+        if not self.carrera_activa:
             print(
                 "Primero debes iniciar una carrera."
             )
+            return
 
-            logging.warning(
-                "Intento de parar el taxi "
-                "sin carrera activa"
+        tiempo_actual = time.time()
+
+        if self.estado == "movimiento":
+
+            tiempo_movimiento = (
+                tiempo_actual
+                - self.inicio_estado
             )
+
+            precio_movimiento = calcular_precio(
+                tiempo_movimiento,
+                self.tarifa_movimiento
+            )
+
+            self.precio_total += precio_movimiento
+
+            print(
+                f"Tiempo en movimiento: "
+                f"{tiempo_movimiento:.2f} segundos"
+            )
+
+            print(
+                f"Precio acumulado: "
+                f"{self.precio_total:.2f} €"
+            )
+
+        self.estado = "parado"
+        self.inicio_estado = tiempo_actual
+
+        print("Taxi parado.")
+
+        logging.info(
+            "Estado cambiado a parado"
+        )
 
 
     def finalizar_carrera(self):
 
-        if self.carrera_activa:
-
-            tiempo_actual = time.time()
-
-            if self.estado == "parado":
-
-                tiempo_parado = (
-                    tiempo_actual - self.inicio_estado
-                )
-
-                precio_parado = calcular_precio(
-                    tiempo_parado,
-                    self.tarifa_parado
-                )
-
-                self.precio_total = (
-                    self.precio_total
-                    + precio_parado
-                )
-
-            elif self.estado == "movimiento":
-
-                tiempo_movimiento = (
-                    tiempo_actual - self.inicio_estado
-                )
-
-                precio_movimiento = calcular_precio(
-                    tiempo_movimiento,
-                    self.tarifa_movimiento
-                )
-
-                self.precio_total = (
-                    self.precio_total
-                    + precio_movimiento
-                )
-
-            duracion_carrera = (
-                tiempo_actual - self.inicio_carrera
-            )
-
-            fecha = datetime.now()
-
-            print("Carrera finalizada.")
-
-            print(
-                f"Duración: "
-                f"{duracion_carrera:.2f} segundos"
-            )
-
-            print(
-                f"Total a pagar: "
-                f"{self.precio_total:.2f} €"
-            )
-
-            logging.info(
-                f"Carrera finalizada. "
-                f"Total: {self.precio_total:.2f} €"
-            )
-
-            with open(
-                "historial.txt",
-                "a"
-            ) as archivo:
-
-                archivo.write(
-                    f"Fecha: {fecha} - "
-                    f"Duración: "
-                    f"{duracion_carrera:.2f} segundos - "
-                    f"Total: "
-                    f"{self.precio_total:.2f} €\n"
-                )
-
-            self.carrera_activa = False
-            self.estado = None
-            self.inicio_estado = None
-            self.inicio_carrera = None
-
-        else:
-
+        if not self.carrera_activa:
             print(
                 "No hay ninguna carrera activa."
             )
+            return
 
-            logging.warning(
-                "Intento de finalizar "
-                "sin carrera activa"
+        tiempo_actual = time.time()
+
+        tiempo_estado = (
+            tiempo_actual
+            - self.inicio_estado
+        )
+
+        if self.estado == "parado":
+
+            precio_estado = calcular_precio(
+                tiempo_estado,
+                self.tarifa_parado
             )
 
+            self.precio_total += precio_estado
+
+        elif self.estado == "movimiento":
+
+            precio_estado = calcular_precio(
+                tiempo_estado,
+                self.tarifa_movimiento
+            )
+
+            self.precio_total += precio_estado
+
+        duracion_total = (
+            tiempo_actual
+            - self.inicio_carrera
+        )
+
+        fecha = datetime.now()
+
+        print("Carrera finalizada.")
+
+        print(
+            f"Duración: "
+            f"{duracion_total:.2f} segundos"
+        )
+
+        print(
+            f"Total a pagar: "
+            f"{self.precio_total:.2f} €"
+        )
+
+        logging.info(
+            f"Carrera finalizada - "
+            f"Duración: {duracion_total:.2f} s - "
+            f"Total: {self.precio_total:.2f} €"
+        )
+
+        with open(
+            "historial.txt",
+            "a"
+        ) as archivo:
+
+            archivo.write(
+                f"Fecha: {fecha} - "
+                f"Duración: "
+                f"{duracion_total:.2f} segundos - "
+                f"Total: "
+                f"{self.precio_total:.2f} €\n"
+            )
+
+        self.carrera_activa = False
+        self.estado = None
+
+        self.inicio_estado = None
+        self.inicio_carrera = None
+
+
+# -----------------------------
+# CLI
+# -----------------------------
 
 if __name__ == "__main__":
 
@@ -340,8 +348,10 @@ if __name__ == "__main__":
         password_creada = crear_password()
 
         if not password_creada:
-            print("No se pudo crear la contraseña.")
-            exit()
+            print(
+                "No se pudo crear la contraseña."
+            )
+            raise SystemExit
 
     acceso_permitido = False
 
@@ -350,17 +360,21 @@ if __name__ == "__main__":
         if verificar_password():
 
             print("Acceso permitido.")
+
             acceso_permitido = True
+
             break
 
         else:
-
-            print("Contraseña incorrecta.")
+            print(
+                "Contraseña incorrecta."
+            )
 
     if not acceso_permitido:
 
         print("Demasiados intentos.")
-        exit()
+
+        raise SystemExit
 
 
     taximetro = Taximetro(
@@ -370,6 +384,7 @@ if __name__ == "__main__":
 
 
     print("=== TAXÍMETRO DIGITAL ===")
+
     print("Comandos disponibles:")
     print("start - Iniciar carrera")
     print("move - Taxi en movimiento")
@@ -382,7 +397,9 @@ if __name__ == "__main__":
 
     while True:
 
-        comando = input("Escribe un comando: ")
+        comando = input(
+            "Escribe un comando: "
+        )
 
         if comando == "start":
 
@@ -404,7 +421,9 @@ if __name__ == "__main__":
 
             print("Programa cerrado.")
 
-            logging.info("Programa cerrado")
+            logging.info(
+                "Programa cerrado"
+            )
 
             break
 
