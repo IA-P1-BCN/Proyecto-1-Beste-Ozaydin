@@ -1,6 +1,11 @@
 import time
 import logging
 import json
+import hashlib
+import secrets
+import hmac
+import os
+from getpass import getpass
 from datetime import datetime
 
 
@@ -22,9 +27,80 @@ def calcular_precio(tiempo, tarifa):
     return tiempo * tarifa
 
 
+def crear_hash_password(password, salt):
+    return hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode(),
+        salt,
+        200000
+    )
+
+
+def crear_password():
+
+    print("Primera ejecución.")
+    print("Crea una contraseña para acceder al taxímetro.")
+
+    password = getpass("Nueva contraseña: ")
+    password_repetida = getpass("Repite la contraseña: ")
+
+    if password != password_repetida:
+        print("Las contraseñas no coinciden.")
+        return False
+
+    salt = secrets.token_bytes(16)
+
+    password_hash = crear_hash_password(
+        password,
+        salt
+    )
+
+    datos = {
+        "salt": salt.hex(),
+        "password_hash": password_hash.hex()
+    }
+
+    with open("auth.json", "w") as archivo:
+        json.dump(datos, archivo)
+
+    print("Contraseña creada correctamente.")
+
+    return True
+
+
+def verificar_password():
+
+    with open("auth.json", "r") as archivo:
+        datos = json.load(archivo)
+
+    salt = bytes.fromhex(
+        datos["salt"]
+    )
+
+    password_hash_guardado = bytes.fromhex(
+        datos["password_hash"]
+    )
+
+    password = getpass("Introduce la contraseña: ")
+
+    password_hash_introducido = crear_hash_password(
+        password,
+        salt
+    )
+
+    return hmac.compare_digest(
+        password_hash_introducido,
+        password_hash_guardado
+    )
+
+
 class Taximetro:
 
-    def __init__(self, tarifa_parado, tarifa_movimiento):
+    def __init__(
+        self,
+        tarifa_parado,
+        tarifa_movimiento
+    ):
 
         self.tarifa_parado = tarifa_parado
         self.tarifa_movimiento = tarifa_movimiento
@@ -131,7 +207,8 @@ class Taximetro:
                 )
 
                 self.precio_total = (
-                    self.precio_total + precio_movimiento
+                    self.precio_total
+                    + precio_movimiento
                 )
 
                 print(
@@ -183,7 +260,8 @@ class Taximetro:
                 )
 
                 self.precio_total = (
-                    self.precio_total + precio_parado
+                    self.precio_total
+                    + precio_parado
                 )
 
             elif self.estado == "movimiento":
@@ -198,7 +276,8 @@ class Taximetro:
                 )
 
                 self.precio_total = (
-                    self.precio_total + precio_movimiento
+                    self.precio_total
+                    + precio_movimiento
                 )
 
             duracion_carrera = (
@@ -233,7 +312,8 @@ class Taximetro:
                     f"Fecha: {fecha} - "
                     f"Duración: "
                     f"{duracion_carrera:.2f} segundos - "
-                    f"Total: {self.precio_total:.2f} €\n"
+                    f"Total: "
+                    f"{self.precio_total:.2f} €\n"
                 )
 
             self.carrera_activa = False
@@ -255,10 +335,39 @@ class Taximetro:
 
 if __name__ == "__main__":
 
+    if not os.path.exists("auth.json"):
+
+        password_creada = crear_password()
+
+        if not password_creada:
+            print("No se pudo crear la contraseña.")
+            exit()
+
+    acceso_permitido = False
+
+    for intento in range(3):
+
+        if verificar_password():
+
+            print("Acceso permitido.")
+            acceso_permitido = True
+            break
+
+        else:
+
+            print("Contraseña incorrecta.")
+
+    if not acceso_permitido:
+
+        print("Demasiados intentos.")
+        exit()
+
+
     taximetro = Taximetro(
         TARIFA_PARADO,
         TARIFA_MOVIMIENTO
     )
+
 
     print("=== TAXÍMETRO DIGITAL ===")
     print("Comandos disponibles:")
@@ -269,6 +378,7 @@ if __name__ == "__main__":
     print("exit - Salir del programa")
 
     logging.info("Programa iniciado")
+
 
     while True:
 
