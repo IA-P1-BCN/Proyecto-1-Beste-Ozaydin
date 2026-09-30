@@ -79,8 +79,9 @@ Taximetro object from taximetro.py
 gui.py does not reproduce the complete taximeter logic. It calls the methods of the Taximetro object and displays the current state and fare.
 
 Main files
-- taximetro.py → main taximeter logic and CLI
-- gui.py → graphical interface
+- main.py → application entry point
+- src/taximetro.py → main taximeter logic and CLI
+- src/gui.py → graphical interface
 - tarifas.json → fare configuration
 - test_taximetro.py → automated tests
 - .gitignore → excludes local and generated files
@@ -109,13 +110,17 @@ Iniciar carrera
 En movimiento
 Parado
 Finalizar carrera
+Historial
 Salir
 The fare updates automatically while a journey is active.
 📁 Project Structure
 Proyecto-1-Beste-Ozaydin/
 │
-├── taximetro.py
-├── gui.py
+├── main.py
+├── src/
+│   ├── __init__.py
+│   ├── taximetro.py
+│   └── gui.py
 ├── tarifas.json
 ├── test_taximetro.py
 ├── README.md
@@ -171,9 +176,9 @@ pytest is used for automated testing.
 
 ▶️ Run the Project
 GUI
-python gui.py
+python main.py
 CLI
-python taximetro.py
+python -m src.taximetro
 Tests
 python -m pytest
 📊 Current Status
@@ -270,8 +275,9 @@ Objeto Taximetro de taximetro.py
 └── guarda carreras finalizadas en historial.txt
 gui.py no reproduce toda la lógica del taxímetro. Utiliza los métodos del objeto Taximetro y muestra el estado y el precio actual.
 Archivos principales
-- taximetro.py → lógica principal y CLI
-- gui.py → interfaz gráfica
+- main.py → punto de entrada de la aplicación
+- src/taximetro.py → lógica principal y CLI
+- src/gui.py → interfaz gráfica
 - tarifas.json → configuración de tarifas
 - test_taximetro.py → pruebas automatizadas
 - .gitignore → excluye archivos locales y generados
@@ -298,13 +304,17 @@ Iniciar carrera
 En movimiento
 Parado
 Finalizar carrera
+Historial
 Salir
 El precio se actualiza automáticamente mientras la carrera está activa.
 📁 Estructura del Proyecto
 Proyecto-1-Beste-Ozaydin/
 │
-├── taximetro.py
-├── gui.py
+├── main.py
+├── src/
+│   ├── __init__.py
+│   ├── taximetro.py
+│   └── gui.py
 ├── tarifas.json
 ├── test_taximetro.py
 ├── README.md
@@ -359,9 +369,9 @@ pytest se utiliza para las pruebas automatizadas.
 
 ▶️ Ejecutar el Proyecto
 GUI
-python gui.py
+python main.py
 CLI
-python taximetro.py
+python -m src.taximetro
 Tests
 python -m pytest
 📊 Estado Actual

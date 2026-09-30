@@ -4,7 +4,7 @@ import os
 
 from tkinter import simpledialog, messagebox
 
-from taximetro import (
+from src.taximetro import (
     Taximetro,
     TARIFA_PARADO,
     TARIFA_MOVIMIENTO,
@@ -365,6 +365,49 @@ def finalizar_desde_gui():
     actualizar_interfaz()
 
 
+def mostrar_historial():
+
+    ventana_historial = tk.Toplevel(ventana)
+    ventana_historial.title("Historial de carreras")
+    ventana_historial.geometry("650x350")
+
+    texto_historial = tk.Text(
+        ventana_historial,
+        wrap=tk.WORD
+    )
+
+    texto_historial.pack(
+        fill=tk.BOTH,
+        expand=True,
+        padx=10,
+        pady=10
+    )
+
+    if os.path.exists("historial.txt"):
+
+        with open(
+            "historial.txt",
+            "r"
+        ) as archivo:
+
+            contenido = archivo.read()
+
+        if contenido == "":
+            contenido = "No hay carreras guardadas."
+
+    else:
+        contenido = "No hay carreras guardadas."
+
+    texto_historial.insert(
+        tk.END,
+        contenido
+    )
+
+    texto_historial.config(
+        state=tk.DISABLED
+    )
+
+
 def salir():
 
     ventana.destroy()
@@ -422,6 +465,19 @@ boton_finish = tk.Button(
 )
 
 boton_finish.pack(
+    pady=5
+)
+
+
+boton_history = tk.Button(
+    ventana,
+    text="Historial",
+    command=mostrar_historial,
+    width=20,
+    height=2
+)
+
+boton_history.pack(
     pady=5
 )
 

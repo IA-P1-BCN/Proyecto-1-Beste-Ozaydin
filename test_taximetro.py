@@ -1,4 +1,4 @@
-from taximetro import calcular_precio
+from src.taximetro import calcular_precio
 
 
 def test_precio_parado():
