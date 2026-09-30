@@ -48,16 +48,20 @@ The third phase added:
 
 The current project uses a simple structure based on the actual files and responsibilities of the application.
 
-gui.py
+main.py
+│
+▼
+src/gui.py
 │
 │  The user clicks:
 │  - Iniciar carrera
 │  - En movimiento
 │  - Parado
 │  - Finalizar carrera
+│  - Historial
 │
 ▼
-Taximetro object from taximetro.py
+Taximetro object from src/taximetro.py
 │
 │  Stores:
 │  - carrera_activa
@@ -76,7 +80,7 @@ Taximetro object from taximetro.py
 ├── writes events to taximetro.log
 └── writes completed journeys to historial.txt
 
-gui.py does not reproduce the complete taximeter logic. It calls the methods of the Taximetro object and displays the current state and fare.
+src/gui.py does not reproduce the complete taximeter logic. It calls the methods of the Taximetro object, displays the current state and fare, and shows saved journeys.
 
 Main files
 - main.py → application entry point
@@ -246,16 +250,20 @@ La tercera fase añadió:
 - separación entre la interfaz y la lógica del taxímetro
 🏗️ Arquitectura del Proyecto
 La arquitectura actual utiliza una estructura sencilla basada en los archivos y responsabilidades reales del proyecto.
-gui.py
+main.py
+│
+▼
+src/gui.py
 │
 │  El usuario pulsa:
 │  - Iniciar carrera
 │  - En movimiento
 │  - Parado
 │  - Finalizar carrera
+│  - Historial
 │
 ▼
-Objeto Taximetro de taximetro.py
+Objeto Taximetro de src/taximetro.py
 │
 │  Guarda:
 │  - carrera_activa
@@ -273,7 +281,7 @@ Objeto Taximetro de taximetro.py
 ├── lee tarifas desde tarifas.json
 ├── guarda eventos en taximetro.log
 └── guarda carreras finalizadas en historial.txt
-gui.py no reproduce toda la lógica del taxímetro. Utiliza los métodos del objeto Taximetro y muestra el estado y el precio actual.
+src/gui.py no reproduce toda la lógica del taxímetro. Utiliza los métodos del objeto Taximetro, muestra el estado y el precio actual, y permite consultar las carreras guardadas.
 Archivos principales
 - main.py → punto de entrada de la aplicación
 - src/taximetro.py → lógica principal y CLI
